@@ -26,15 +26,26 @@ uv run ruff format         # format
 curl -sX POST localhost:8000/chat/default/messages -H 'content-type: application/json' \
      -d '{"content":"Explain FastAPI routing in two sentences."}'
 
-curl -sX POST 'localhost:8000/chat/researcher/messages?details=true' \
+curl -N -X POST 'localhost:8000/chat/researcher/messages?stream=true' \
      -H 'content-type: application/json' -d '{"content":"What time is it in Tokyo?"}'
 ```
 
-`POST /chat/{agent}/messages` shows all three parameter sources at once, which is the whole of
-FastAPI's parameter rule: `agent` matches a name in the path, so it is a **path parameter**;
-`body` is a Pydantic model, so it is the **request body**; `details` matches nothing in the path
-and is not a model, so it is a **query parameter**. `Annotated[..., Path(...)]` and
-`Annotated[..., Query(...)]` add the titles and descriptions that show up in `/docs`.
+FastAPI works out where each argument comes from by its type and name: `agent` matches a name in
+the path, so it is a **path parameter**; `body` is a Pydantic model, so it is the **request
+body**; `stream` matches neither, so it is an optional **query parameter**.
+`Annotated[..., Path(...)]` and `Annotated[..., Query(...)]` add the titles and descriptions
+that show up in `/docs`.
+
+With `?stream=true` the reply leaves as server-sent events instead of one JSON body — each
+chunk JSON-encoded, because model output contains newlines and raw text would break the
+`data: ...\n\n` framing:
+
+```
+data: {"delta": "It is "}
+data: {"delta": "18 degrees\nin "}
+data: {"delta": "Berlin."}
+data: [DONE]
+```
 
 ## Layout
 

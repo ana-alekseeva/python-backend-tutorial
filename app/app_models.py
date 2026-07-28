@@ -15,12 +15,16 @@ class SendMessageRequest(BaseModel):
             examples=["Explain FastAPI routing in two sentences."],
         ),
     ]
+    image_url: Annotated[
+        str | None,
+        Field(description="URL of an image attachment already uploaded to object storage."),
+    ] = None
+    pdf_url: Annotated[
+        str | None,
+        Field(description="URL of a PDF attachment already uploaded to object storage."),
+    ] = None
 
 
 class SendMessageResponse(BaseModel):
     reply: Annotated[str, Field(description="The agent's reply.")]
     tokens_used: Annotated[int, Field(description="Total tokens billed for this turn.")]
-
-    # Only filled in when the caller asks with ?details=true.
-    steps: Annotated[int | None, Field(description="Model calls the reply took.")] = None
-    tools_called: Annotated[tuple[str, ...] | None, Field(description="In call order.")] = None
