@@ -32,7 +32,11 @@ async def send_message(
         )
 
     result = await run_agent(body.content, config=config)
-    return SendMessageResponse(reply=result.reply, tokens_used=result.tokens_used)
+    return SendMessageResponse(
+        reply=result.reply,
+        tokens_used=result.tokens_used,
+        image_url=result.image_url,
+    )
 
 
 async def _events(content: str, config: AgentConfig):

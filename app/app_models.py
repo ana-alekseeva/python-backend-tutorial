@@ -28,3 +28,7 @@ class SendMessageRequest(BaseModel):
 class SendMessageResponse(BaseModel):
     reply: Annotated[str, Field(description="The agent's reply.")]
     tokens_used: Annotated[int, Field(description="Total tokens billed for this turn.")]
+    image_url: Annotated[
+        str | None,
+        Field(description="URL of an image the agent produced, in object storage."),
+    ] = None

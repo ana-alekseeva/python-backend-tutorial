@@ -18,6 +18,7 @@ class AgentResult(BaseModel):
     tokens_used: Annotated[int, Field(description="Summed over every model call in the loop.")]
     steps: Annotated[int, Field(description="Model calls it took to get here.")]
     tools_called: tuple[str, ...] = ()
+    image_url: Annotated[str | None, Field(description="Set by an image-producing tool.")] = None
 
 
 class AgentConfig(BaseModel):
