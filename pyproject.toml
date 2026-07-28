@@ -12,3 +12,24 @@ dependencies = [
 
 [tool.ruff]
 line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes: undefined names, unused imports
+    "I",    # isort: import order
+    "UP",   # pyupgrade: modern syntax for the target version
+    "B",    # bugbear: likely bugs, e.g. mutable default arguments
+    "SIM",  # simplify
+    "RUF",  # ruff's own rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Re-exports: names are imported to be part of the package's public surface.
+"app/agent/__init__.py" = ["F401"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.0",
+]

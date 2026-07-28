@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo, available_timezones
 
 
 @dataclass(frozen=True)
@@ -50,16 +50,16 @@ def get_weather(city: str) -> str:
     description="Get the current date and time in a timezone.",
     parameters={
         "type": "object",
-        "properties": {"timezone": {"type": "string", "description": "IANA name, e.g. 'Europe/Amsterdam'."}},
+        "properties": {
+            "timezone": {"type": "string", "description": "IANA name, e.g. 'Europe/Amsterdam'."}
+        },
         "required": ["timezone"],
     },
 )
 def current_time(timezone: str) -> str:
-    try:
-        zone = ZoneInfo(timezone)
-    except (ZoneInfoNotFoundError, ValueError):
+    if timezone not in available_timezones():
         return f"Unknown timezone: {timezone}."
-    return datetime.now(zone).strftime("%Y-%m-%d %H:%M %Z")
+    return datetime.now(ZoneInfo(timezone)).strftime("%Y-%m-%d %H:%M %Z")
 
 
 @tool(

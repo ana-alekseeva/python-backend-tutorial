@@ -15,6 +15,13 @@ uv run fastapi dev app/main.py
 
 Interactive OpenAPI docs: <http://127.0.0.1:8000/docs>
 
+Lint and format with [ruff](https://docs.astral.sh/ruff/) — one tool for both:
+
+```bash
+uv run ruff check --fix    # lint, autofixing what it safely can
+uv run ruff format         # format
+```
+
 ```bash
 curl -sX POST localhost:8000/chat/default/messages -H 'content-type: application/json' \
      -d '{"content":"Explain FastAPI routing in two sentences."}'
