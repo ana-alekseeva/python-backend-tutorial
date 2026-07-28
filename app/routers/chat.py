@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from app.agent import AgentConfig, AgentName, get_agent, run_agent, stream_agent
 from app.app_models import SendMessageRequest, SendMessageResponse
+from app.security import CurrentUser
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 async def send_message(
     agent: Annotated[AgentName, Path(title="Which agent answers")],
     body: SendMessageRequest,
+    user: CurrentUser,
     stream: Annotated[bool, Query(description="Stream the reply as it is generated.")] = False,
 ) -> SendMessageResponse:
     config = get_agent(agent)

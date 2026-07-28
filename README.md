@@ -4,14 +4,22 @@ The smallest useful chatbot backend: send a message, get a reply.
 Python 3.14, FastAPI, uv, models served by [Nebius Token Factory](https://tokenfactory.nebius.com/)
 (OpenAI-API compatible, so it is driven with the `openai` SDK).
 
-No database, no conversation history, no middleware — just the agent.
+No database, no conversation history, no middleware — the agent, and a cookie in front of it.
 
 ## Run
 
 ```bash
-cp .env.example .env      # then paste your NEBIUS_API_KEY
+cp .env.example .env                       # configuration
+cp .env.secrets.example .env.secrets       # credentials — fill these in
 uv run fastapi dev app/main.py
 ```
+
+Two files on purpose: `.env` is ordinary configuration and `.env.secrets` holds the three
+credentials (`NEBIUS_API_KEY`, `SESSION_SECRET`, `AUTH_PASSWORD`). Both are gitignored, both
+examples are committed. Splitting them means the file you paste into a terminal, a support
+thread or a bug report is the harmless one, and in production the secrets file is the only thing
+your secret manager has to mount. `Settings` reads both, secrets last, so a secret can never be
+shadowed by the config file.
 
 Interactive OpenAPI docs: <http://127.0.0.1:8000/docs>
 
@@ -22,11 +30,17 @@ uv run ruff check --fix    # lint, autofixing what it safely can
 uv run ruff format         # format
 ```
 
+Every `/chat` call needs a session cookie, so log in first and keep the cookie jar:
+
 ```bash
-curl -sX POST localhost:8000/chat/default/messages -H 'content-type: application/json' \
+curl -sX POST localhost:8000/auth/login -c jar.txt -H 'content-type: application/json' \
+     -d '{"username":"demo","password":"<AUTH_PASSWORD>"}'
+
+curl -sX POST localhost:8000/chat/default/messages -b jar.txt \
+     -H 'content-type: application/json' \
      -d '{"content":"Explain FastAPI routing in two sentences."}'
 
-curl -N -X POST 'localhost:8000/chat/researcher/messages?stream=true' \
+curl -N -X POST 'localhost:8000/chat/researcher/messages?stream=true' -b jar.txt \
      -H 'content-type: application/json' -d '{"content":"What time is it in Tokyo?"}'
 ```
 
@@ -53,6 +67,8 @@ data: [DONE]
 | -------------------------- | ---------------------------------------------------------- |
 | `app/main.py`              | The app object; `include_router`                           |
 | `app/routers/chat.py`      | Routing — path, method, the function that handles it        |
+| `app/routers/auth.py`      | Login, logout, who-am-I                                     |
+| `app/security.py`          | The session cookie and the `CurrentUser` dependency         |
 | `app/app_models.py`        | API shapes — the contract with the frontend                 |
 | `app/agent/agent_models.py`| Agent shapes — `ChatMessage`, `AgentResult`, `AgentConfig`, `AgentName` |
 | `app/agent/loop.py`        | The loop: call the model, run tools, return a reply         |
@@ -60,6 +76,35 @@ data: [DONE]
 | `app/agent/config.py`      | The agent registry — the values filled into `AgentConfig`   |
 | `app/agent/prompts/*.txt`  | The instructions themselves                                 |
 | `app/config.py`            | App settings — secrets and endpoints, from the environment  |
+
+## Auth
+
+`POST /auth/login` checks the credentials and calls `response.set_cookie(...)`; the browser sends
+that cookie back on every later request, and `GET /auth/me` reads it back. The cookie is set
+`HttpOnly` (JavaScript cannot read it, so XSS cannot steal it), `Secure` (https only — turn it off
+locally with `COOKIE_SECURE=false`), and `SameSite=Lax`, which is what stops another site from
+POSTing to this API with your cookie attached.
+
+It carries a **signed username**, not a random session id — `itsdangerous` signs it with
+`SESSION_SECRET`, so the server can trust it without storing anything. Tampering fails the
+signature, and `max_age` expires it. The tradeoff: there is no server-side logout, since a
+stolen cookie stays valid until it expires. A session table fixes that, and is the natural next
+step once there is a database.
+
+Endpoints take the user through a dependency:
+
+```python
+async def send_message(..., user: CurrentUser) -> SendMessageResponse:
+```
+
+`CurrentUser` is `Annotated[User, Depends(get_current_user)]`. No cookie, a forged cookie, or an
+expired one all 401 before the endpoint body runs — and the endpoint is handed a `User` rather
+than a cookie, which is exactly where the *next* check belongs: does this conversation belong to
+this user?
+
+`AUTH_USERNAME` / `AUTH_PASSWORD` stand in for a users table — one account, from the environment,
+compared with `secrets.compare_digest` so the comparison is constant-time. Replace `authenticate()`
+with a real lookup plus a password hash (`argon2`, `bcrypt`) and nothing else in this layer moves.
 
 ## Two kinds of model, two kinds of configuration
 

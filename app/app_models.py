@@ -3,6 +3,17 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 
+class LoginRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    username: Annotated[str, Field(min_length=1, max_length=64)]
+    password: Annotated[str, Field(min_length=1, max_length=256)]
+
+
+class User(BaseModel):
+    username: Annotated[str, Field(description="Who the session cookie says you are.")]
+
+
 class SendMessageRequest(BaseModel):
     model_config = {"extra": "forbid"}  # reject unknown fields
 
