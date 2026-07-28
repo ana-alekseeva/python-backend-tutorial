@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -15,8 +15,8 @@ class ChatMessage(BaseModel):
 
 class AgentResult(BaseModel):
     reply: str
-    tokens_used: int = Field(description="Summed over every model call in the loop.")
-    steps: int = Field(description="Model calls it took to get here.")
+    tokens_used: Annotated[int, Field(description="Summed over every model call in the loop.")]
+    steps: Annotated[int, Field(description="Model calls it took to get here.")]
     tools_called: tuple[str, ...] = ()
 
 
@@ -26,10 +26,13 @@ class AgentConfig(BaseModel):
     # Model ids: https://tokenfactory.nebius.com/models/catalog
     model: str
     system_prompt: str
-    tools: tuple[str, ...] = Field(default=(), description="Names from agent.tools.tool_registry.")
-    temperature: float = Field(default=0.6, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=1024, ge=1)
-    max_steps: int = Field(default=5, ge=1, description="Tool-calling rounds before giving up.")
+    tools: Annotated[
+        tuple[str, ...],
+        Field(description="Names from agent.tools.tool_registry."),
+    ] = ()
+    temperature: Annotated[float, Field(ge=0.0, le=2.0)] = 0.6
+    max_tokens: Annotated[int, Field(ge=1)] = 1024
+    max_steps: Annotated[int, Field(ge=1, description="Tool-calling rounds before giving up.")] = 5
 
     @field_validator("tools")
     @classmethod

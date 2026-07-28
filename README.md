@@ -16,12 +16,18 @@ uv run fastapi dev app/main.py
 Interactive OpenAPI docs: <http://127.0.0.1:8000/docs>
 
 ```bash
-curl -sX POST localhost:8000/chat/messages -H 'content-type: application/json' \
+curl -sX POST localhost:8000/chat/default/messages -H 'content-type: application/json' \
      -d '{"content":"Explain FastAPI routing in two sentences."}'
 
-curl -sX POST 'localhost:8000/chat/messages?agent=coder' -H 'content-type: application/json' \
-     -d '{"content":"Write a FastAPI health endpoint."}'
+curl -sX POST 'localhost:8000/chat/researcher/messages?details=true' \
+     -H 'content-type: application/json' -d '{"content":"What time is it in Tokyo?"}'
 ```
+
+`POST /chat/{agent}/messages` shows all three parameter sources at once, which is the whole of
+FastAPI's parameter rule: `agent` matches a name in the path, so it is a **path parameter**;
+`body` is a Pydantic model, so it is the **request body**; `details` matches nothing in the path
+and is not a model, so it is a **query parameter**. `Annotated[..., Path(...)]` and
+`Annotated[..., Query(...)]` add the titles and descriptions that show up in `/docs`.
 
 ## Layout
 
@@ -70,8 +76,8 @@ Tools are listed by name, not by function: the config stays plain data, and the 
 names against `tool_registry` per request, so an agent only ever sees the schemas it is allowed
 to call. A name that is not in the registry fails at import, not at the first model call.
 
-The caller picks an agent with `?agent=coder`; `AgentName` is a `StrEnum`, so `/docs` renders it
-as a dropdown and an unknown name is a 422 before your code runs.
+The caller picks an agent in the path — `/chat/coder/messages`. `AgentName` is a `StrEnum`, so
+`/docs` renders it as a dropdown and an unknown name is a 422 before your code runs.
 
 ## Expanding it
 
